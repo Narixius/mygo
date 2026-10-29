@@ -98,6 +98,9 @@ type window struct {
 	// tells that the backend closes it, not the user.
 	popover, popoverController id
 	popoverClosing             bool
+	// popoverSize is the content size the popover has, which a resize
+	// changes without AppKit's animation (placePopover).
+	popoverSize NSSize
 
 	lastMouseDown id
 	dropped       []string         // DroppedFiles

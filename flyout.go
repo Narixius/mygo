@@ -124,7 +124,9 @@ type FlyoutOptions struct {
 	// Popover gives the flyout the look of the system's popovers on macOS:
 	// it shows in an NSPopover, which draws its material, rounded corners,
 	// shadow and an arrow pointing at the middle of Anchor, and animates
-	// as it opens and closes. AppKit places it on the side Placement
+	// as it opens and closes. A resize while it shows is immediate, not
+	// animated, so an app can follow its content's height frame by frame.
+	// AppKit places it on the side Placement
 	// names, or the opposite one where the screen has no room: the rest
 	// of Placement, and Gap, do not apply. As AppKit's popovers do, it has
 	// the keyboard while it shows, Focusable or not, which makes it close
