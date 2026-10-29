@@ -33,6 +33,7 @@ func (w *window) createPopover(content NSRect) {
 	w.popover = alloc("NSPopover")
 	send(w.popover, "setContentViewController:", uintptr(w.popoverController))
 	msgSetSize(w.popover, sel("setContentSize:"), content.Size)
+	w.popoverSize = content.Size
 	behavior := uintptr(popoverBehaviorApplicationDefined)
 	if w.flyout.Focusable {
 		behavior = popoverBehaviorTransient
@@ -78,7 +79,9 @@ func (w *window) showPopover() {
 		// user did not activate, as AppKit's own status items' do.
 		send(w.b.app, "activateIgnoringOtherApps:", 1)
 	}
-	msgSetSize(w.popover, sel("setContentSize:"), NSSize{float64(w.flyoutSize.Width), float64(w.flyoutSize.Height)})
+	size := NSSize{float64(w.flyoutSize.Width), float64(w.flyoutSize.Height)}
+	msgSetSize(w.popover, sel("setContentSize:"), size)
+	w.popoverSize = size
 	msgRectIDUint(w.popover, sel("showRelativeToRect:ofView:preferredEdge:"), r, view, edge)
 	w.adoptPopoverWindow()
 	w.highlightTray(true)
@@ -119,7 +122,24 @@ func (w *window) placePopover() {
 	if !sendBool(w.popover, "isShown") {
 		return
 	}
-	msgSetSize(w.popover, sel("setContentSize:"), NSSize{float64(w.flyoutSize.Width), float64(w.flyoutSize.Height)})
+	// A resize follows the app's springs frame by frame. AppKit's own
+	// animation for a new content size would finish on its own schedule,
+	// ahead of what the app draws in it, so it is off for the change and
+	// back as it was: the popover still animates as it opens and closes.
+	// Moving the popover at its size changes nothing, and does not touch
+	// the animation.
+	size := NSSize{float64(w.flyoutSize.Width), float64(w.flyoutSize.Height)}
+	if size != w.popoverSize {
+		animates := sendBool(w.popover, "animates")
+		if animates {
+			send(w.popover, "setAnimates:", 0)
+		}
+		msgSetSize(w.popover, sel("setContentSize:"), size)
+		if animates {
+			send(w.popover, "setAnimates:", 1)
+		}
+		w.popoverSize = size
+	}
 	if _, r, _ := w.popoverAnchor(); w.flyout.Tray == nil {
 		msgSetRect(w.popover, sel("setPositioningRect:"), r)
 	}
